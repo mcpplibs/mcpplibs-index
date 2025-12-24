@@ -1,0 +1,10 @@
+add_repositories("mcpplibs-index git@github.com:mcpplibs/mcpplibs-index.git")
+
+add_requires("llmapi 0.0.1")
+
+target("llmapi_test")
+    set_kind("binary")
+    add_languages("c++23")
+    add_files("main.cpp")
+    add_packages("llmapi")
+    set_policy("build.c++.modules", true)
