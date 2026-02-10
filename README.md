@@ -6,11 +6,10 @@ mcpplibs index
 
 ```lua
 -- 0 - Add mcpplibs's index repos
-add_repositories("mcpplibs-index git@github.com:mcpplibs/mcpplibs-index.git")
+add_repositories("mcpplibs-index https://github.com/mcpplibs/mcpplibs-index.git")
 
 -- 1 - Add the libraries and versions you need
 add_requires("templates 0.0.1")
---add_requires("mcpplibs-index@templates 0.0.1")
 
 target("templates_test")
     set_kind("binary")

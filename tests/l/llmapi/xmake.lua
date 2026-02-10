@@ -1,6 +1,6 @@
 add_repositories("mcpplibs-index git@github.com:mcpplibs/mcpplibs-index.git")
 
-add_requires("llmapi 0.0.1")
+add_requires("llmapi 0.0.2")
 
 target("llmapi_test")
     set_kind("binary")
