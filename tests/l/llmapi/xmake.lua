@@ -1,4 +1,4 @@
-add_repositories("mcpplibs-index git@github.com:mcpplibs/mcpplibs-index.git")
+add_repositories("mcpplibs-index https://github.com/mcpplibs/mcpplibs-index.git")
 
 add_requires("llmapi 0.0.2")
 

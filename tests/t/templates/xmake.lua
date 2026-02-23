@@ -1,4 +1,4 @@
-add_repositories("mcpplibs-index git@github.com:mcpplibs/mcpplibs-index.git")
+add_repositories("mcpplibs-index https://github.com/mcpplibs/mcpplibs-index.git")
 
 add_requires("templates 0.0.1")
 --add_requires("mcpplibs-index::templates 0.0.1") -- TODO: impl prefix support in xmake
