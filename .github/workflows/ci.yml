@@ -1,0 +1,152 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'tests/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'tests/**'
+      - '.github/workflows/ci.yml'
+
+env:
+  XLINGS_NON_INTERACTIVE: 1
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      templates: ${{ steps.filter.outputs.templates }}
+      cmdline: ${{ steps.filter.outputs.cmdline }}
+      llmapi: ${{ steps.filter.outputs.llmapi }}
+      lua: ${{ steps.filter.outputs.lua }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            templates:
+              - 'packages/t/templates/**'
+              - 'tests/t/templates/**'
+              - '.github/workflows/ci.yml'
+            cmdline:
+              - 'packages/c/cmdline/**'
+              - 'tests/c/cmdline/**'
+              - '.github/workflows/ci.yml'
+            llmapi:
+              - 'packages/l/llmapi/**'
+              - 'tests/l/llmapi/**'
+              - '.github/workflows/ci.yml'
+            lua:
+              - 'packages/m/mcpplibs-capi-lua/**'
+              - 'tests/l/lua/**'
+              - '.github/workflows/ci.yml'
+
+  build:
+    needs: detect-changes
+    if: >-
+      needs.detect-changes.outputs.templates == 'true' ||
+      needs.detect-changes.outputs.cmdline == 'true' ||
+      needs.detect-changes.outputs.llmapi == 'true' ||
+      needs.detect-changes.outputs.lua == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04, shell: bash }
+          - { os: macos-15,     shell: bash }
+          - { os: windows-latest, shell: pwsh }
+    runs-on: ${{ matrix.os }}
+    name: build (${{ matrix.os }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-toolchain
+
+      - name: Configure (linux)
+        if: runner.os == 'Linux'
+        working-directory: tests
+        run: |
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          xmake f -P . -y
+
+      - name: Configure (macos)
+        if: runner.os == 'macOS'
+        working-directory: tests
+        run: |
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          xmake f -P . -y --toolchain=llvm
+
+      - name: Configure (windows)
+        if: runner.os == 'Windows'
+        working-directory: tests
+        run: |
+          $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
+          xmake f -P . -y
+
+      # templates
+      - name: templates (unix)
+        if: runner.os != 'Windows' && needs.detect-changes.outputs.templates == 'true'
+        working-directory: tests
+        run: |
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          xmake build -P . -y templates_test
+          xmake run -P . templates_test
+      - name: templates (windows)
+        if: runner.os == 'Windows' && needs.detect-changes.outputs.templates == 'true'
+        working-directory: tests
+        run: |
+          $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
+          xmake build -P . -y templates_test
+          xmake run -P . templates_test
+
+      # cmdline
+      - name: cmdline (unix)
+        if: runner.os != 'Windows' && needs.detect-changes.outputs.cmdline == 'true'
+        working-directory: tests
+        run: |
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          xmake build -P . -y cmdline_test
+          xmake run -P . cmdline_test test_input
+      - name: cmdline (windows)
+        if: runner.os == 'Windows' && needs.detect-changes.outputs.cmdline == 'true'
+        working-directory: tests
+        run: |
+          $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
+          xmake build -P . -y cmdline_test
+          xmake run -P . cmdline_test test_input
+
+      # llmapi (build only, needs API key to run)
+      - name: llmapi (unix)
+        if: runner.os != 'Windows' && needs.detect-changes.outputs.llmapi == 'true'
+        working-directory: tests
+        run: |
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          xmake build -P . -y llmapi_test
+      - name: llmapi (windows)
+        if: runner.os == 'Windows' && needs.detect-changes.outputs.llmapi == 'true'
+        working-directory: tests
+        run: |
+          $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
+          xmake build -P . -y llmapi_test
+
+      # lua
+      - name: lua (unix)
+        if: runner.os != 'Windows' && needs.detect-changes.outputs.lua == 'true'
+        working-directory: tests
+        run: |
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          xmake build -P . -y lua_test
+          xmake run -P . lua_test
+      - name: lua (windows)
+        if: runner.os == 'Windows' && needs.detect-changes.outputs.lua == 'true'
+        working-directory: tests
+        run: |
+          $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
+          xmake build -P . -y lua_test
+          xmake run -P . lua_test

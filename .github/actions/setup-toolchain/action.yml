@@ -1,0 +1,54 @@
+name: Setup C++23 Toolchain
+description: Install xlings and C++23 toolchain for the current platform
+
+runs:
+  using: composite
+  steps:
+    - name: Setup (linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        LATEST_VERSION=$(gh release view --repo d2learn/xlings --json tagName -q '.tagName')
+        VERSION_NUM=${LATEST_VERSION#v}
+        TARBALL="xlings-${VERSION_NUM}-linux-x86_64.tar.gz"
+        gh release download "$LATEST_VERSION" --repo d2learn/xlings --pattern "$TARBALL" --dir /tmp
+        mkdir -p "$HOME/.xlings"
+        tar -xzf "/tmp/$TARBALL" -C "$HOME/.xlings" --strip-components=1
+        "$HOME/.xlings/bin/xlings" self install
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Setup (macos)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        LATEST_VERSION=$(gh release view --repo d2learn/xlings --json tagName -q '.tagName')
+        VERSION_NUM=${LATEST_VERSION#v}
+        ARCH=$(uname -m)
+        TARBALL="xlings-${VERSION_NUM}-macosx-${ARCH}.tar.gz"
+        gh release download "$LATEST_VERSION" --repo d2learn/xlings --pattern "$TARBALL" --dir /tmp
+        mkdir -p "$HOME/.xlings"
+        tar -xzf "/tmp/$TARBALL" -C "$HOME/.xlings" --strip-components=1
+        xattr -dr com.apple.quarantine "$HOME/.xlings" 2>/dev/null || true
+        "$HOME/.xlings/bin/xlings" self install
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Setup (windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: irm https://raw.githubusercontent.com/d2learn/xlings/refs/heads/main/tools/other/quick_install.ps1 | iex
+
+    - name: Install toolchain (linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+        xlings install gcc@15 -y
+
+    - name: Install toolchain (macos)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+        xlings install llvm@20 -y

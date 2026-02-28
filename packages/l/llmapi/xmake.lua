@@ -14,15 +14,10 @@ package("llmapi")
 
     add_versions("0.0.1", "174f86d3afdf48a57ad1cc9688718d1f1100a78a7e56686c823c573c3ccf99f4")
 
-    add_configs("capi", {description = "Link with llmapi_c (C API) by default", default = false, type = "boolean"})
-
     add_includedirs("include")
     add_deps("libcurl 8.11.0")
 
     on_load(function (package)
-        if package:config("capi") then
-            package:add("links", "llmapi_c")
-        end
         package:add("links", "llmapi")
     end)
 
