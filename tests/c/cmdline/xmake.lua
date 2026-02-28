@@ -1,5 +1,3 @@
-add_repositories("mcpplibs-index https://github.com/mcpplibs/mcpplibs-index.git")
-
 add_requires("cmdline", {system = false})
 
 target("cmdline_test")

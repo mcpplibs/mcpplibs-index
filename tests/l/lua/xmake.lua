@@ -1,5 +1,3 @@
-add_repositories("mcpplibs-index https://github.com/mcpplibs/mcpplibs-index.git")
-
 add_requires("mcpplibs-capi-lua 0.0.1")
 
 target("lua_test")
