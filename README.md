@@ -27,6 +27,7 @@ target("templates_test")
 | [templates](https://github.com/mcpplibs/templates) | A template of modern C++ `modules` libraries | [templates_test](tests/t/templates) | |
 | [cmdline](https://github.com/mcpplibs/cmdline) | A simple command-line parsing library/framework for modern C++ | [cmdline_test](tests/c/cmdline) | |
 | [llmapi](https://github.com/mcpplibs/llmapi) | Modern C++ LLM API client with openai-compatible support | [llmapi_test](tests/l/llmapi) | |
+| [mcpplibs-capi-lua](https://github.com/mcpplibs/lua) | C++23 module bindings for Lua 5.4 C API | [lua_test](tests/l/lua) | |
 
 ## Other
 
