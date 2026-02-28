@@ -14,5 +14,7 @@ package("mcpplibs-capi-lua")
     add_deps("lua")
 
     on_install(function (package)
-        import("package.tools.xmake").install(package)
+        local configs = {}
+        import("package.tools.xmake").install(package, configs, {target = "mcpplibs-capi-lua"})
+        os.cp("src/capi/lua_headers.h", package:installdir("include"))
     end)
