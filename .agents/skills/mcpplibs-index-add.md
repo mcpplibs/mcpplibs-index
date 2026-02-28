@@ -14,6 +14,7 @@ This skill adds a new library from `https://github.com/mcpplibs/<name>` to the m
 - xmake package docs: https://xmake.io/mirror/manual/package_dependencies.html
 - mcpplibs org: https://github.com/mcpplibs
 - index repo: https://github.com/mcpplibs/mcpplibs-index
+- xlings CI reference (cross-platform C++23 toolchain): https://github.com/d2learn/xlings/tree/main/.github/workflows
 
 ## Step 1: Gather Library Info
 
@@ -110,7 +111,11 @@ Add an `includes()` line to `tests/xmake.lua`:
 includes("<first-letter>/<package-name>")
 ```
 
-## Step 6: Verify Build
+## Step 6: Update CI
+
+Add a new job to `.github/workflows/ci.yml` for the package. Each package has its own job with path-based triggering. Add path filter in `detect-changes` job and a new job block (see existing jobs as template). Also add the package paths to the top-level `on.push.paths` and `on.pull_request.paths`.
+
+## Step 7: Verify Build
 
 ```bash
 # Clean any cached package
@@ -129,19 +134,68 @@ xmake run <package-name>_test
 
 All three commands must succeed before proceeding.
 
-## Step 7: Create Branch, Commit & Push
+## Step 8: Create Branch, Commit & Push
 
 ```bash
 git checkout -b add-<repo-name>-library
 git add packages/<first-letter>/<package-name>/xmake.lua \
        tests/<first-letter>/<package-name>/xmake.lua \
        tests/<first-letter>/<package-name>/main.cpp \
-       tests/xmake.lua
+       tests/xmake.lua \
+       .github/workflows/ci.yml
 git commit -m "add <package-name> library"
 git push -u upstream add-<repo-name>-library
 ```
 
 Use `upstream` (SSH remote) for push, not `origin` (HTTPS, no auth).
+
+## C++23 Toolchain Reference
+
+All mcpplibs packages require C++23 with modules support. Below are the toolchain configurations for each platform, referenced from [xlings CI](https://github.com/d2learn/xlings/tree/main/.github/workflows).
+
+All toolchains are installed via [xlings](https://github.com/d2learn/xlings). xlings bundles xmake, no separate install needed.
+
+### Install xlings
+
+```bash
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/d2learn/xlings/main/tools/other/quick_install.sh | bash
+export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/d2learn/xlings/refs/heads/main/tools/other/quick_install.ps1 | iex
+$env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
+```
+
+### Linux — GCC 15 (Ubuntu 24.04)
+
+```bash
+xlings install gcc@15 -y
+xmake f -y
+```
+
+### macOS — LLVM 20 (macOS 15)
+
+```bash
+xlings install llvm@20 -y
+xmake f -y
+```
+
+### Windows — MSVC (windows-latest)
+
+```bash
+xmake f -y   # auto-selects MSVC
+```
+
+No special configuration needed. MSVC from Visual Studio supports C++23.
+
+### Toolchain Version Summary
+
+| Platform | Compiler | Version | Install |
+|----------|----------|---------|---------|
+| Linux | GCC | 15.1.0 | `xlings install gcc@15 -y` |
+| macOS | LLVM/Clang | 20 | `xlings install llvm@20 -y` |
+| Windows | MSVC | latest | auto-detected |
 
 ## Checklist
 
@@ -151,6 +205,7 @@ Use `upstream` (SSH remote) for push, not `origin` (HTTPS, no auth).
 - [ ] Extra headers copied in `on_install` if needed by cppm
 - [ ] Test does NOT have `add_repositories()` (top-level handles it)
 - [ ] Test registered in `tests/xmake.lua` via `includes()`
+- [ ] CI matrix updated with new test entry
 - [ ] `xmake build` succeeds
 - [ ] `xmake run` produces expected output
 - [ ] Committed and pushed to upstream
