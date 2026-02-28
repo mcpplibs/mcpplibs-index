@@ -2,6 +2,8 @@ import std;
 import mcpplibs.capi.lua;
 
 int main() {
+    using namespace mcpplibs::capi;
+
     auto L = lua::L_newstate();
     lua::L_openlibs(L);
 
