@@ -15,5 +15,11 @@ package("mcpplibs-xpkg")
 
     on_install(function (package)
         local configs = {}
-        import("package.tools.xmake").install(package, configs, {target = "xpkg"})
+        local install = import("package.tools.xmake").install
+        -- Install each library target individually to avoid building examples/tests
+        install(package, configs, {target = "mcpplibs-xpkg"})
+        install(package, configs, {target = "mcpplibs-xpkg-loader"})
+        install(package, configs, {target = "mcpplibs-xpkg-index"})
+        install(package, configs, {target = "mcpplibs-xpkg-lua-stdlib"})
+        install(package, configs, {target = "mcpplibs-xpkg-executor"})
     end)
