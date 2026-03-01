@@ -9,6 +9,7 @@ package("mcpplibs-capi-lua")
         "https://github.com/mcpplibs/lua.git"
     )
 
+    add_versions("0.0.2", "b08f0aa6f8c42dc279a217d0e6386a8c8491abf0ade2b14b993e8428fca34563")
     add_versions("0.0.1", "cd75cf95f193e782c9024e25a89fce99c820dc93930d7157a16f89f5a16b6521")
 
     add_deps("lua")
