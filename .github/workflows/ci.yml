@@ -25,6 +25,7 @@ jobs:
       cmdline: ${{ steps.filter.outputs.cmdline }}
       llmapi: ${{ steps.filter.outputs.llmapi }}
       lua: ${{ steps.filter.outputs.lua }}
+      xpkg: ${{ steps.filter.outputs.xpkg }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -47,6 +48,10 @@ jobs:
               - 'packages/m/mcpplibs-capi-lua/**'
               - 'tests/l/lua/**'
               - '.github/workflows/ci.yml'
+            xpkg:
+              - 'packages/m/mcpplibs-xpkg/**'
+              - 'tests/m/mcpplibs-xpkg/**'
+              - '.github/workflows/ci.yml'
 
   build:
     needs: detect-changes
@@ -54,7 +59,8 @@ jobs:
       needs.detect-changes.outputs.templates == 'true' ||
       needs.detect-changes.outputs.cmdline == 'true' ||
       needs.detect-changes.outputs.llmapi == 'true' ||
-      needs.detect-changes.outputs.lua == 'true'
+      needs.detect-changes.outputs.lua == 'true' ||
+      needs.detect-changes.outputs.xpkg == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -150,3 +156,19 @@ jobs:
           $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
           xmake build -P . -y lua_test
           xmake run -P . lua_test
+
+      # mcpplibs-xpkg
+      - name: mcpplibs-xpkg (unix)
+        if: runner.os != 'Windows' && needs.detect-changes.outputs.xpkg == 'true'
+        working-directory: tests
+        run: |
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          xmake build -P . -y mcpplibs-xpkg_test
+          xmake run -P . mcpplibs-xpkg_test
+      - name: mcpplibs-xpkg (windows)
+        if: runner.os == 'Windows' && needs.detect-changes.outputs.xpkg == 'true'
+        working-directory: tests
+        run: |
+          $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
+          xmake build -P . -y mcpplibs-xpkg_test
+          xmake run -P . mcpplibs-xpkg_test
