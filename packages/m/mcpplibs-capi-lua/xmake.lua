@@ -12,7 +12,7 @@ package("mcpplibs-capi-lua")
     add_versions("0.0.2", "3f23354dc589b7c85ff188f241046f51d8aac0cda001bae75ae0b8eef3705f59")
     add_versions("0.0.1", "cd75cf95f193e782c9024e25a89fce99c820dc93930d7157a16f89f5a16b6521")
 
-    add_deps("lua")
+    add_deps("lua ~5.4")
 
     on_install(function (package)
         local configs = {}
