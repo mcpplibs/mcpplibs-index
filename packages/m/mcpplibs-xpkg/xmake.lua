@@ -5,8 +5,8 @@ package("mcpplibs-xpkg")
     set_license("MIT")
 
     add_urls(
-        "https://github.com/Sunrisepeak/libxpkg/archive/refs/tags/$(version).tar.gz",
-        "https://github.com/Sunrisepeak/libxpkg.git"
+        "https://github.com/Sunrisepeak/libxpkg/archive/refs/tags/v$(version).tar.gz",
+        "https://github.com/Sunrisepeak/libxpkg.git v$(version)"
     )
 
     add_versions("0.0.1", "4bbf178c9225e6be09302408ebe70edfdae237adbf142ddf10d1535aec2ae0cd")
