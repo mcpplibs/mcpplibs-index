@@ -9,7 +9,7 @@ package("mcpplibs-xpkg")
         "https://github.com/Sunrisepeak/libxpkg.git v$(version)"
     )
 
-    add_versions("0.0.27", "8a0f48671f8004ef579f31edcc1ffadad9d6471f7369d1d814cc771580728b56")
+    add_versions("0.0.27", "b3e727cd03203aece5558b8c9427eb4985c507af4b645cbb17ba993911935a22")
     add_versions("0.0.26", "03cf8fc360c463943000eef5d2f79bf3134d6003e96714bd36b486ccb512e2b7")
     add_versions("0.0.25", "70086636af8bcbdbfe313a4a3b0f5a4e7c7085bd227d460e75b5980ce1f88569")
     add_versions("0.0.24", "ed8660dbc4e4ceb42e20a6fa057a5252e8d2efcfba33ccac49a673e43d731752")
