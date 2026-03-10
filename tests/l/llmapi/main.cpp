@@ -2,17 +2,16 @@ import std;
 import mcpplibs.llmapi;
 
 int main() {
-    using namespace mcpplibs;
-    
-    llmapi::Client client(std::getenv("OPENAI_API_KEY"), llmapi::URL::Poe);
+    using namespace mcpplibs::llmapi;
 
-    client.model("gpt-5")
-          .system("You are a helpful assistant.")
-          .user("In one sentence, introduce modern C++. 并给出中文翻译")
-          .request([](std::string_view chunk) {
-                std::print("{}", chunk);
-                std::cout.flush();
-          });
+    auto client = Client(Config{
+        .apiKey = "test-key",
+        .model = "gpt-4o-mini",
+    });
 
-    return 0;
+    client.system("You are a helpful assistant.");
+    client.user("In one sentence, introduce modern C++.");
+
+    std::println("llmapi {}", VERSION);
+    return client.conversation().size() == 2 ? 0 : 1;
 }

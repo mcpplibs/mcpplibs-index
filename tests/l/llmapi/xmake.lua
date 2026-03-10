@@ -1,4 +1,4 @@
-add_requires("llmapi 0.0.2")
+add_requires("llmapi 0.1.0")
 
 target("llmapi_test")
     set_kind("binary")
