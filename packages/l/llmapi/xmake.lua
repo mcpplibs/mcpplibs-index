@@ -22,5 +22,5 @@ package("llmapi")
 
     on_install(function (package)
         local configs = {}
-        import("package.tools.xmake").install(package, configs)
+        import("package.tools.xmake").install(package, configs, {target = "llmapi"})
     end)
