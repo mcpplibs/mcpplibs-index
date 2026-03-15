@@ -9,7 +9,7 @@ package("mcpplibs-tinyhttps")
         "https://github.com/mcpplibs/tinyhttps.git"
     )
 
-    add_versions("0.2.0", "022c5911b4199a80059579ad29a49b8e3312edf10e85e7cc961a4234106da70b")
+    add_versions("0.2.0", "279d3363591fb62b7a7a788e9500eddb6b97a285e28030efea168a5dcf678f04")
     add_versions("0.1.0", "af7daa6a63f264070a1ac8fe42725713ba7ea54e58f1e8b8e190d1b4c58a0896")
 
     add_deps("mbedtls 3.6.1")
