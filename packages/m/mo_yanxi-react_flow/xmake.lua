@@ -7,7 +7,7 @@ package("mo_yanxi-react_flow")
     add_urls(
         "https://github.com/Yuria-Shikibe/mo_yanxi_react_flow/archive/refs/tags/$(version).tar.gz",
         "https://github.com/Yuria-Shikibe/mo_yanxi_react_flow.git", {
-            excludes = {"*/properties/*"}
+            excludes = {"*/properties/*, */test/*, */examples/*, */benchmark/*"}
         }
     )
 
