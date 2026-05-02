@@ -9,6 +9,7 @@ package("mcpplibs-xpkg")
         "https://github.com/openxlings/libxpkg.git v$(version)"
     )
 
+    add_versions("0.0.33", "aea0ddaa972e92ae24a2f4ae29ece3d60c34168b13d5c1567133d73f348532d8")
     add_versions("0.0.32", "27eb8a68ca84fb0f084310d4c336498e9b5c6cc34fc857d59c5d93a3fd99f6c7")
     add_versions("0.0.31", "99ed585238c2f9f38fb7ebffc1ed61f30a5ea4a10a307032a8d3023d94a00da6")
     add_versions("0.0.30", "d878985ecbf61ece6b4d4b37b5d87863d89a6b21e0b4b38b98c65b8dc4d8b1bf")
