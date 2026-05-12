@@ -39,16 +39,23 @@ runs:
       shell: pwsh
       run: irm https://raw.githubusercontent.com/d2learn/xlings/refs/heads/main/tools/other/quick_install.ps1 | iex
 
-    - name: Install toolchain (linux)
-      if: runner.os == 'Linux'
+    - name: Refresh package index (unix)
+      if: runner.os != 'Windows'
       shell: bash
       run: |
         export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-        xlings install gcc@15 -y
+        xlings update
 
-    - name: Install toolchain (macos)
-      if: runner.os == 'macOS'
+    - name: Refresh package index (windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
+        xlings update
+
+    - name: Install toolchain (unix)
+      if: runner.os != 'Windows'
       shell: bash
       run: |
         export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-        xlings install llvm@20 -y
+        xlings install -y

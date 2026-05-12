@@ -4,7 +4,7 @@ import mcpplibs.llmapi;
 int main() {
     using namespace mcpplibs::llmapi;
 
-    auto client = Client(Config{
+    auto client = Client<OpenAI>(Config{
         .apiKey = "test-key",
         .model = "gpt-4o-mini",
     });

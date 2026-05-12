@@ -9,6 +9,8 @@ package("mcpplibs-tinyhttps")
         "https://github.com/mcpplibs/tinyhttps.git"
     )
 
+    add_versions("0.2.3", "67ff75050d31157d3c35562187c9fb622e66167c98bb950cebb51db9b07ebe97")
+    add_versions("0.2.2", "bc4cb59475826a975dd0408b59a00cf41c4aa4078a0fc2e54929bde7fb696248")
     add_versions("0.2.0", "81dab607227f353fa83068d4fee47b6877ceff891719a60a9cd75eaf827fab44")
     add_versions("0.1.0", "af7daa6a63f264070a1ac8fe42725713ba7ea54e58f1e8b8e190d1b4c58a0896")
 
