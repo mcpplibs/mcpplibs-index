@@ -82,11 +82,13 @@ jobs:
         if: runner.os == 'Linux'
         working-directory: tests
         run: |
-          GCC_VER=$(python3 -c "import json; print(json.load(open('../.xlings.json'))['workspace']['gcc']['linux'])")
-          GCC_SDK="$HOME/.xlings/data/xpkgs/xim-x-gcc/${GCC_VER}"
+          MUSL_VER=$(python3 -c "import json; print(json.load(open('../.xlings.json'))['workspace']['musl-gcc']['linux'])")
+          MUSL_SDK="$HOME/.xlings/data/xpkgs/xim-x-musl-gcc/${MUSL_VER}"
           xmake f -P . -y -vv \
-            --cc="${GCC_SDK}/bin/gcc" \
-            --cxx="${GCC_SDK}/bin/g++"
+            --sdk="${MUSL_SDK}" \
+            --cross=x86_64-linux-musl- \
+            --cc="${MUSL_SDK}/bin/x86_64-linux-musl-gcc" \
+            --cxx="${MUSL_SDK}/bin/x86_64-linux-musl-g++"
 
       - name: Configure (macos)
         if: runner.os == 'macOS'
@@ -124,10 +126,11 @@ jobs:
             echo "Building changed targets: $TARGETS"
           fi
 
-          # llmapi_test: skip entirely — requires API key to run, and xmake's
-          # C++23 module system can't resolve transitive module deps from
-          # installed packages. Tested in llmapi's own repo CI instead.
-          TARGETS=$(echo "$TARGETS" | tr ' ' '\n' | grep -v llmapi_test | tr '\n' ' ')
+          # Skip known-incompatible targets:
+          # - llmapi_test: requires API key, xmake module transitive dep issue
+          # - mo_yanxi-react_flow_test: uses TU-local lambdas in type aliases,
+          #   GCC rejects per C++23 [basic.link]/15 (Clang-only for now)
+          TARGETS=$(echo "$TARGETS" | tr ' ' '\n' | grep -v -E 'llmapi_test|mo_yanxi-react_flow_test' | tr '\n' ' ')
 
           FAILED=""
           for target in $TARGETS; do
