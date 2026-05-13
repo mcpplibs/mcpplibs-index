@@ -15,6 +15,7 @@ runs:
         mkdir -p "$HOME/.xlings"
         tar -xzf "/tmp/$TARBALL" -C "$HOME/.xlings" --strip-components=1
         "$HOME/.xlings/bin/xlings" self install
+        echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
       env:
         GH_TOKEN: ${{ github.token }}
 
@@ -31,31 +32,33 @@ runs:
         tar -xzf "/tmp/$TARBALL" -C "$HOME/.xlings" --strip-components=1
         xattr -dr com.apple.quarantine "$HOME/.xlings" 2>/dev/null || true
         "$HOME/.xlings/bin/xlings" self install
+        echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
       env:
         GH_TOKEN: ${{ github.token }}
 
     - name: Setup (windows)
       if: runner.os == 'Windows'
       shell: pwsh
-      run: irm https://raw.githubusercontent.com/d2learn/xlings/refs/heads/main/tools/other/quick_install.ps1 | iex
+      run: |
+        irm https://raw.githubusercontent.com/d2learn/xlings/refs/heads/main/tools/other/quick_install.ps1 | iex
+        echo "$env:USERPROFILE\.xlings\subos\current\bin" | Out-File -Append -FilePath $env:GITHUB_PATH
 
     - name: Refresh package index (unix)
       if: runner.os != 'Windows'
       shell: bash
-      run: |
-        export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-        xlings update
+      run: xlings update
 
     - name: Refresh package index (windows)
       if: runner.os == 'Windows'
       shell: pwsh
-      run: |
-        $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
-        xlings update
+      run: xlings update
 
     - name: Install toolchain (unix)
       if: runner.os != 'Windows'
       shell: bash
-      run: |
-        export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-        xlings install -y
+      run: xlings install -y
+
+    - name: Install toolchain (windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: xlings install -y
