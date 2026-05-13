@@ -19,13 +19,26 @@ package("llmapi")
     add_versions("0.0.1", "174f86d3afdf48a57ad1cc9688718d1f1100a78a7e56686c823c573c3ccf99f4")
 
     add_includedirs("include")
-    add_deps("mcpplibs-tinyhttps 0.2.2")
 
     on_load(function (package)
         package:add("links", "llmapi")
+        -- tinyhttps dependency only for 0.2.0+ (earlier versions used libcurl)
+        if package:version():ge("0.2.0") then
+            package:add("deps", "mcpplibs-tinyhttps >=0.2.0")
+        end
     end)
 
     on_install(function (package)
         local configs = {}
         import("package.tools.xmake").install(package, configs, {target = "llmapi"})
+    end)
+
+    on_test(function (package)
+        assert(package:check_cxxsnippets({test = [[
+            import llmapi;
+            void test() {
+                llmapi::Config cfg;
+                cfg.model = "test";
+            }
+        ]]}, {configs = {languages = "c++23"}}))
     end)
