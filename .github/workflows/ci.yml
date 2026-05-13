@@ -6,13 +6,15 @@ on:
     paths:
       - 'packages/**'
       - 'tests/**'
-      - '.github/workflows/ci.yml'
+      - '.github/**'
+      - '.xlings.json'
   pull_request:
     branches: [main]
     paths:
       - 'packages/**'
       - 'tests/**'
-      - '.github/workflows/ci.yml'
+      - '.github/**'
+      - '.xlings.json'
 
 env:
   XLINGS_NON_INTERACTIVE: 1
@@ -21,46 +23,48 @@ jobs:
   detect-changes:
     runs-on: ubuntu-24.04
     outputs:
-      templates: ${{ steps.filter.outputs.templates }}
-      cmdline: ${{ steps.filter.outputs.cmdline }}
-      llmapi: ${{ steps.filter.outputs.llmapi }}
-      lua: ${{ steps.filter.outputs.lua }}
-      xpkg: ${{ steps.filter.outputs.xpkg }}
+      packages: ${{ steps.detect.outputs.packages }}
+      build_all: ${{ steps.detect.outputs.build_all }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
         with:
-          filters: |
-            templates:
-              - 'packages/t/templates/**'
-              - 'tests/t/templates/**'
-              - '.github/workflows/ci.yml'
-            cmdline:
-              - 'packages/c/cmdline/**'
-              - 'tests/c/cmdline/**'
-              - '.github/workflows/ci.yml'
-            llmapi:
-              - 'packages/l/llmapi/**'
-              - 'tests/l/llmapi/**'
-              - '.github/workflows/ci.yml'
-            lua:
-              - 'packages/m/mcpplibs-capi-lua/**'
-              - 'tests/l/lua/**'
-              - '.github/workflows/ci.yml'
-            xpkg:
-              - 'packages/m/mcpplibs-xpkg/**'
-              - 'tests/m/mcpplibs-xpkg/**'
-              - '.github/workflows/ci.yml'
+          fetch-depth: 0
+
+      - name: Detect changed packages
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+
+          CI_CHANGED=$(git diff --name-only "$BASE" HEAD -- .github/ .xlings.json || true)
+          if [ -n "$CI_CHANGED" ]; then
+            echo "build_all=true" >> "$GITHUB_OUTPUT"
+            echo "CI config changed, will build all packages"
+          else
+            echo "build_all=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          CHANGED_DIRS=$(git diff --name-only "$BASE" HEAD -- packages/ tests/ | \
+            sed -n 's|^packages/./\([^/]*\)/.*|\1|p; s|^tests/./\([^/]*\)/.*|\1|p' | \
+            sort -u)
+
+          JSON="["
+          FIRST=true
+          for pkg in $CHANGED_DIRS; do
+            if [ "$FIRST" = true ]; then FIRST=false; else JSON="$JSON,"; fi
+            JSON="$JSON\"$pkg\""
+          done
+          JSON="$JSON]"
+
+          echo "packages=$JSON" >> "$GITHUB_OUTPUT"
+          echo "Changed packages: $JSON"
 
   build:
     needs: detect-changes
-    if: >-
-      needs.detect-changes.outputs.templates == 'true' ||
-      needs.detect-changes.outputs.cmdline == 'true' ||
-      needs.detect-changes.outputs.llmapi == 'true' ||
-      needs.detect-changes.outputs.lua == 'true' ||
-      needs.detect-changes.outputs.xpkg == 'true'
+    if: needs.detect-changes.outputs.build_all == 'true' || needs.detect-changes.outputs.packages != '[]'
     strategy:
       fail-fast: false
       matrix:
@@ -78,97 +82,128 @@ jobs:
         if: runner.os == 'Linux'
         working-directory: tests
         run: |
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-          xmake f -P . -y
+          MUSL_VER=$(python3 -c "import json; print(json.load(open('../.xlings.json'))['workspace']['musl-gcc']['linux'])")
+          MUSL_SDK="$HOME/.xlings/data/xpkgs/xim-x-musl-gcc/${MUSL_VER}"
+          xmake f -P . -y -vv \
+            --sdk="${MUSL_SDK}" \
+            --cross=x86_64-linux-musl- \
+            --cc="${MUSL_SDK}/bin/x86_64-linux-musl-gcc" \
+            --cxx="${MUSL_SDK}/bin/x86_64-linux-musl-g++"
 
       - name: Configure (macos)
         if: runner.os == 'macOS'
         working-directory: tests
         run: |
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-          xmake f -P . -y --toolchain=llvm
+          LLVM_VER=$(python3 -c "import json; print(json.load(open('../.xlings.json'))['workspace']['llvm']['macosx'])")
+          LLVM_SDK="$HOME/.xlings/data/xpkgs/xim-x-llvm/${LLVM_VER}"
+          xmake f -P . -y -vv --toolchain=llvm --sdk="${LLVM_SDK}"
 
       - name: Configure (windows)
         if: runner.os == 'Windows'
         working-directory: tests
-        run: |
-          $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
-          xmake f -P . -y
+        run: xmake f -P . -y -vv
 
-      # templates
-      - name: templates (unix)
-        if: runner.os != 'Windows' && needs.detect-changes.outputs.templates == 'true'
+      - name: Build and test (unix)
+        if: runner.os != 'Windows'
         working-directory: tests
+        env:
+          BUILD_ALL: ${{ needs.detect-changes.outputs.build_all }}
+          CHANGED_PACKAGES: ${{ needs.detect-changes.outputs.packages }}
         run: |
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-          xmake build -P . -y templates_test
-          xmake run -P . templates_test
-      - name: templates (windows)
-        if: runner.os == 'Windows' && needs.detect-changes.outputs.templates == 'true'
-        working-directory: tests
-        run: |
-          $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
-          xmake build -P . -y templates_test
-          xmake run -P . templates_test
+          TARGETS=""
+          if [ "$BUILD_ALL" = "true" ]; then
+            TARGETS=$(grep -r 'target("' */*/xmake.lua 2>/dev/null | sed 's/.*target("\([^"]*\)").*/\1/' | sort -u)
+            echo "Building ALL targets: $TARGETS"
+          else
+            for pkg in $(echo "$CHANGED_PACKAGES" | tr -d '[]"' | tr ',' ' '); do
+              TARGET="${pkg}_test"
+              if grep -rq "target(\"$TARGET\")" */*/xmake.lua 2>/dev/null; then
+                TARGETS="$TARGETS $TARGET"
+              else
+                echo "Warning: no test target '$TARGET' found for package '$pkg', skipping"
+              fi
+            done
+            echo "Building changed targets: $TARGETS"
+          fi
 
-      # cmdline
-      - name: cmdline (unix)
-        if: runner.os != 'Windows' && needs.detect-changes.outputs.cmdline == 'true'
-        working-directory: tests
-        run: |
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-          xmake build -P . -y cmdline_test
-          xmake run -P . cmdline_test test_input
-      - name: cmdline (windows)
-        if: runner.os == 'Windows' && needs.detect-changes.outputs.cmdline == 'true'
-        working-directory: tests
-        run: |
-          $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
-          xmake build -P . -y cmdline_test
-          xmake run -P . cmdline_test test_input
+          # llmapi_test: skip entirely — requires API key to run, and xmake's
+          # C++23 module system can't resolve transitive module deps from
+          # installed packages. Tested in llmapi's own repo CI instead.
+          TARGETS=$(echo "$TARGETS" | tr ' ' '\n' | grep -v llmapi_test | tr '\n' ' ')
 
-      # llmapi (build only, needs API key to run)
-      - name: llmapi (unix)
-        if: runner.os != 'Windows' && needs.detect-changes.outputs.llmapi == 'true'
-        working-directory: tests
-        run: |
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-          xmake build -P . -y llmapi_test
-      - name: llmapi (windows)
-        if: runner.os == 'Windows' && needs.detect-changes.outputs.llmapi == 'true'
-        working-directory: tests
-        run: |
-          $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
-          xmake build -P . -y llmapi_test
+          FAILED=""
+          for target in $TARGETS; do
+            echo "=== Building $target ==="
+            if ! xmake build -P . -y "$target"; then
+              echo "FAILED to build $target"
+              FAILED="$FAILED $target"
+              continue
+            fi
 
-      # lua
-      - name: lua (unix)
-        if: runner.os != 'Windows' && needs.detect-changes.outputs.lua == 'true'
-        working-directory: tests
-        run: |
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-          xmake build -P . -y lua_test
-          xmake run -P . lua_test
-      - name: lua (windows)
-        if: runner.os == 'Windows' && needs.detect-changes.outputs.lua == 'true'
-        working-directory: tests
-        run: |
-          $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
-          xmake build -P . -y lua_test
-          xmake run -P . lua_test
+            echo "=== Running $target ==="
+            if [ "$target" = "cmdline_test" ]; then
+              xmake run -P . "$target" test_input
+            else
+              xmake run -P . "$target"
+            fi
+          done
 
-      # mcpplibs-xpkg
-      - name: mcpplibs-xpkg (unix)
-        if: runner.os != 'Windows' && needs.detect-changes.outputs.xpkg == 'true'
+          if [ -n "$FAILED" ]; then
+            echo "::error::Failed targets:$FAILED"
+            exit 1
+          fi
+
+      - name: Build and test (windows)
+        if: runner.os == 'Windows'
         working-directory: tests
+        env:
+          BUILD_ALL: ${{ needs.detect-changes.outputs.build_all }}
+          CHANGED_PACKAGES: ${{ needs.detect-changes.outputs.packages }}
         run: |
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-          xmake build -P . -y mcpplibs-xpkg_test
-          xmake run -P . mcpplibs-xpkg_test
-      - name: mcpplibs-xpkg (windows)
-        if: runner.os == 'Windows' && needs.detect-changes.outputs.xpkg == 'true'
-        working-directory: tests
-        run: |
-          $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
-          xmake build -P . -y mcpplibs-xpkg_test
-          xmake run -P . mcpplibs-xpkg_test
+          $targets = @()
+          if ($env:BUILD_ALL -eq "true") {
+            $targets = Get-ChildItem -Recurse -Filter "xmake.lua" -Path "*/*" |
+              Select-String 'target\("([^"]+)"\)' |
+              ForEach-Object { $_.Matches[0].Groups[1].Value } |
+              Sort-Object -Unique
+            Write-Host "Building ALL targets: $($targets -join ', ')"
+          } else {
+            $packages = $env:CHANGED_PACKAGES | ConvertFrom-Json
+            foreach ($pkg in $packages) {
+              $target = "${pkg}_test"
+              $found = Get-ChildItem -Recurse -Filter "xmake.lua" -Path "*/*" |
+                Select-String "target\(`"$target`"\)" -Quiet
+              if ($found) {
+                $targets += $target
+              } else {
+                Write-Host "Warning: no test target '$target' found for package '$pkg', skipping"
+              }
+            }
+            Write-Host "Building changed targets: $($targets -join ', ')"
+          }
+
+          # Skip llmapi_test (same reason as unix)
+          $targets = $targets | Where-Object { $_ -ne "llmapi_test" }
+
+          $failed = @()
+          foreach ($target in $targets) {
+            Write-Host "=== Building $target ==="
+            xmake build -P . -y $target
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "FAILED to build $target"
+              $failed += $target
+              continue
+            }
+
+            Write-Host "=== Running $target ==="
+            if ($target -eq "cmdline_test") {
+              xmake run -P . $target test_input
+            } else {
+              xmake run -P . $target
+            }
+          }
+
+          if ($failed.Count -gt 0) {
+            Write-Host "::error::Failed targets: $($failed -join ', ')"
+            exit 1
+          }
