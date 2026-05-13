@@ -1,61 +1,33 @@
 name: Setup C++23 Toolchain
-description: Install xlings and C++23 toolchain for the current platform
+description: Install xlings and project dependencies declared in .xlings.json
 
 runs:
   using: composite
   steps:
-    - name: Setup (linux)
-      if: runner.os == 'Linux'
-      shell: bash
-      run: |
-        LATEST_VERSION=$(gh release view --repo d2learn/xlings --json tagName -q '.tagName')
-        VERSION_NUM=${LATEST_VERSION#v}
-        TARBALL="xlings-${VERSION_NUM}-linux-x86_64.tar.gz"
-        gh release download "$LATEST_VERSION" --repo d2learn/xlings --pattern "$TARBALL" --dir /tmp
-        mkdir -p "$HOME/.xlings"
-        tar -xzf "/tmp/$TARBALL" -C "$HOME/.xlings" --strip-components=1
-        "$HOME/.xlings/bin/xlings" self install
-      env:
-        GH_TOKEN: ${{ github.token }}
-
-    - name: Setup (macos)
-      if: runner.os == 'macOS'
-      shell: bash
-      run: |
-        LATEST_VERSION=$(gh release view --repo d2learn/xlings --json tagName -q '.tagName')
-        VERSION_NUM=${LATEST_VERSION#v}
-        ARCH=$(uname -m)
-        TARBALL="xlings-${VERSION_NUM}-macosx-${ARCH}.tar.gz"
-        gh release download "$LATEST_VERSION" --repo d2learn/xlings --pattern "$TARBALL" --dir /tmp
-        mkdir -p "$HOME/.xlings"
-        tar -xzf "/tmp/$TARBALL" -C "$HOME/.xlings" --strip-components=1
-        xattr -dr com.apple.quarantine "$HOME/.xlings" 2>/dev/null || true
-        "$HOME/.xlings/bin/xlings" self install
-      env:
-        GH_TOKEN: ${{ github.token }}
-
-    - name: Setup (windows)
-      if: runner.os == 'Windows'
-      shell: pwsh
-      run: irm https://raw.githubusercontent.com/d2learn/xlings/refs/heads/main/tools/other/quick_install.ps1 | iex
-
-    - name: Refresh package index (unix)
+    - name: Install xlings (unix)
       if: runner.os != 'Windows'
       shell: bash
       run: |
-        export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-        xlings update
+        curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+        echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
+        echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+        echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
 
-    - name: Refresh package index (windows)
+    - name: Install xlings (windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $env:PATH = "$env:USERPROFILE\.xlings\subos\current\bin;$env:PATH"
-        xlings update
+        irm https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1 | iex
+        "XLINGS_HOME=$env:USERPROFILE\.xlings" >> $env:GITHUB_ENV
+        "$env:USERPROFILE\.xlings\subos\current\bin" >> $env:GITHUB_PATH
+        "$env:USERPROFILE\.xlings\bin" >> $env:GITHUB_PATH
 
-    - name: Install toolchain (unix)
+    - name: Install dependencies
       if: runner.os != 'Windows'
       shell: bash
-      run: |
-        export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-        xlings install -y
+      run: xlings install -y
+
+    - name: Install dependencies (windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: xlings install -y
