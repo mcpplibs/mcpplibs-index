@@ -22,6 +22,16 @@ runs:
         "$env:USERPROFILE\.xlings\subos\current\bin" >> $env:GITHUB_PATH
         "$env:USERPROFILE\.xlings\bin" >> $env:GITHUB_PATH
 
+    - name: Refresh package index
+      if: runner.os != 'Windows'
+      shell: bash
+      run: xlings update
+
+    - name: Refresh package index (windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: xlings update
+
     - name: Install dependencies
       if: runner.os != 'Windows'
       shell: bash
