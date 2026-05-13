@@ -1,7 +1,7 @@
 {
   "workspace": {
     "xmake": "3.0.7",
-    "musl-gcc": { "linux": "15.1.0" },
+    "gcc": { "linux": "16.1.0" },
     "llvm": { "macosx": "20.1.7" }
   }
 }
