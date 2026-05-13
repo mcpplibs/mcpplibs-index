@@ -81,12 +81,22 @@ jobs:
       - name: Configure (linux)
         if: runner.os == 'Linux'
         working-directory: tests
-        run: xmake f -P . -y -vv
+        run: |
+          MUSL_VER=$(python3 -c "import json; print(json.load(open('../.xlings.json'))['workspace']['musl-gcc']['linux'])")
+          MUSL_SDK="$HOME/.xlings/data/xpkgs/xim-x-musl-gcc/${MUSL_VER}"
+          xmake f -P . -y -vv \
+            --sdk="${MUSL_SDK}" \
+            --cross=x86_64-linux-musl- \
+            --cc="${MUSL_SDK}/bin/x86_64-linux-musl-gcc" \
+            --cxx="${MUSL_SDK}/bin/x86_64-linux-musl-g++"
 
       - name: Configure (macos)
         if: runner.os == 'macOS'
         working-directory: tests
-        run: xmake f -P . -y -vv --toolchain=llvm
+        run: |
+          LLVM_VER=$(python3 -c "import json; print(json.load(open('../.xlings.json'))['workspace']['llvm']['macosx'])")
+          LLVM_SDK="$HOME/.xlings/data/xpkgs/xim-x-llvm/${LLVM_VER}"
+          xmake f -P . -y -vv --toolchain=llvm --sdk="${LLVM_SDK}"
 
       - name: Configure (windows)
         if: runner.os == 'Windows'
