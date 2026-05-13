@@ -1,4 +1,4 @@
-add_requires("llmapi 0.2.5")
+add_requires("llmapi 0.2.6")
 
 target("llmapi_test")
     set_kind("binary")
@@ -6,3 +6,6 @@ target("llmapi_test")
     add_files("main.cpp")
     add_packages("llmapi")
     set_policy("build.c++.modules", true)
+    -- xmake C++23 module system requires explicit transitive deps
+    -- when the dep's modules import other packages' modules
+    add_packages("mcpplibs-tinyhttps", "mbedtls")
