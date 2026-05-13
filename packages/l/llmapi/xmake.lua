@@ -23,11 +23,20 @@ package("llmapi")
     on_load(function (package)
         package:add("links", "llmapi")
         if package:version():ge("0.2.0") then
+            -- 0.2.0+ extracted tinyhttps into a separate package
             package:add("deps", "mcpplibs-tinyhttps >=0.2.0")
+        elseif package:version():ge("0.1.0") then
+            -- 0.1.0 bundles tinyhttps inline, but still needs mbedtls
+            package:add("deps", "mbedtls >=3.6.1")
         end
     end)
 
     on_install(function (package)
         local configs = {}
-        import("package.tools.xmake").install(package, configs, {target = "llmapi"})
+        if package:version():ge("0.2.0") then
+            import("package.tools.xmake").install(package, configs, {target = "llmapi"})
+        else
+            -- 0.1.0 and earlier: install all targets (llmapi bundles tinyhttps)
+            import("package.tools.xmake").install(package, configs)
+        end
     end)
